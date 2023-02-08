@@ -1,13 +1,7 @@
 package com.catabaseScrape.scraper;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.imageio.ImageIO;
-import javax.imageio.stream.ImageInputStream;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -29,50 +23,57 @@ public class WikiScrape {
 
 		List<WebElement> rows = table.findElements(By.tagName("tr"));
 
-		for (int i = 1; i <= rows.size(); i++) {
+		for (int i = 1; i < rows.size(); i++) {
 			List<WebElement> title = rows.get(i).findElements(By.tagName("th"));
 			List<WebElement> cols = rows.get(i).findElements(By.tagName("td"));
 
-			String breed = title.get(0).getText();
-			String location = cols.get(0).getText();
-			String breedType = cols.get(1).getText();
-			String bodyType = cols.get(2).getText();
-			String coatType = cols.get(3).getText();
-			String coatPattern = cols.get(4).getText();
-			String url = "";
+			String regex = "[^a-zA-Z\\s+]|[0-9+]";
+
+			String breed = "\'" + title.get(0).getText().replaceAll(regex, "") + "\'";
+			String location = "\'" + cols.get(0).getText().replaceAll(regex, "") + "\'";
+			String breedType = "\'" + cols.get(1).getText().replaceAll(regex, "") + "\'";
+			String bodyType = "\'" + cols.get(2).getText().replaceAll(regex, "") + "\'";
+			String coatType = "\'" + cols.get(3).getText().replaceAll(regex, "") + "\'";
+			String coatPattern = "\'" + cols.get(4).getText().replaceAll(regex, "") + "\'";
+			String url = ", \'../otabby.jpeg\'";
 
 			try {
-				if(cols.get(5).getText().trim() != "") {
-					
-					Thread.sleep(1000);
-					
-					cols.get(5).click();
+				cols.get(5).findElement(By.tagName("img"));
+				Thread.sleep(1000);
 
-					Thread.sleep(1000);
+				cols.get(5).click();
 
-					url = driver.getCurrentUrl();
-
-					Thread.sleep(1000);
-				}
+				Thread.sleep(1000);
 				
-			} catch (Exception e) {
+				driver.findElement(By.xpath("/html/body/div[4]/div/div[2]/div/div[1]/img")).click();
+				
+				Thread.sleep(1000);
 
+				url = driver.getCurrentUrl().replaceAll("[,;\\[\\]]", "");
+
+				url = " ,\'" + url + "\'";
+
+				Thread.sleep(1000);
+				driver.navigate().back();
+
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-			
 
 			String query = "INSERT INTO cat (id, breed, location, breed_type, body_type, coat_type, coat_pattern, image_location) VALUES ("
 					+ i + ", " + breed + "," + location + ", " + breedType + ", " + bodyType + ", " + coatType + ", "
-					+ coatPattern + ", " + url + ")";
+					+ coatPattern + url + ")";
 
 			System.out.println(query);
-			
-			if(url != "") {
+
+			if (!url.equals(", \'../otabby.jpeg\'")) {
 				driver.navigate().back();
 			}
 
 		}
 
 		return dataList;
+
 	}
 
 	public void close() {
